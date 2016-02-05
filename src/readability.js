@@ -70,6 +70,7 @@ Readability.prototype.getContent = function(notDeprecated) {
     this._document.body.innerHTML = this.cache.body;
     articleContent = helpers.grabArticle(this._document, true);
     if (helpers.getInnerText(articleContent, false) === '') {
+      this.cache['article-content-dom'] = false;
       return this.cache['article-content'] = false;
     }
   }

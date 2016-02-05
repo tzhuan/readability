@@ -348,12 +348,12 @@ var grabByline = module.exports.grabByline = function(document) {
   var nodes = document.getElementsByTagName('*');
   for (var i = 0; i < nodes.length; ++i) {
     var node = nodes[i];
-    // Check to see if this node is a byline, and remove it if it is.
+    // Check to see if this node is a byline
     if (checkByline(node, node.className + ' ' + node.id)) {
       return node.textContent.trim();
     }
   }
-  return undefined;
+  return false;
 }
 
 var grabExcerpt = module.exports.grabExcerpt = function(content) {
@@ -364,7 +364,7 @@ var grabExcerpt = module.exports.grabExcerpt = function(content) {
   if (paragraphs.length > 0) {
     return paragraphs[0].textContent.trim();
   }
-  return undefined;
+  return false;
 }
 
 /**
