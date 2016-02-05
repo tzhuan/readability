@@ -12,7 +12,8 @@ var regexps = {
   trimRe: /^\s+|\s+$/g,
   normalizeRe: /\s{2,}/g,
   killBreaksRe: /(<br\s*\/?>(\s|&nbsp;?)*){1,}/g,
-  videoRe: /http:\/\/(www\.)?(youtube|vimeo|youku|tudou|56|yinyuetai)\.com/i
+  videoRe: /http:\/\/(www\.)?(youtube|vimeo|youku|tudou|56|yinyuetai)\.com/i,
+  bylineRe: /byline|author|dateline|writtenby/i
 };
 
 var dbg;
@@ -253,6 +254,118 @@ var grabArticle = module.exports.grabArticle = function(document, preserveUnlike
 
   return articleContent;
 };
+
+var grabMetadata = module.exports.grabMetadata = function(document) {
+  var metadata = {};
+  var values = {};
+  var metaElements = document.getElementsByTagName("meta");
+
+  // Match "description", or Twitter's "twitter:description" (Cards)
+  // in name attribute.
+  var namePattern = /^\s*((twitter)\s*:\s*)?(description|title|image:src)\s*$/gi;
+
+  // Match Facebook's Open Graph title & description properties.
+  var propertyPattern = /^\s*og\s*:\s*(description|title|image)\s*$/gi;
+
+  // Find description tags.
+  for (var i = 0; i < metaElements.length; ++i) {
+    var element = metaElements[i];
+    var elementName = element.getAttribute("name");
+    var elementProperty = element.getAttribute("property");
+
+    if ([elementName, elementProperty].indexOf("author") !== -1) {
+      metadata.byline = element.getAttribute("content");
+      continue;
+    }
+
+    var name = null;
+    if (namePattern.test(elementName)) {
+      name = elementName;
+    } else if (propertyPattern.test(elementProperty)) {
+      name = elementProperty;
+    }
+
+    if (name) {
+      var content = element.getAttribute("content");
+      if (content) {
+        // Convert to lowercase and remove any whitespace
+        // so we can match below.
+        name = name.toLowerCase().replace(/\s/g, '');
+        values[name] = content.trim();
+      }
+    }
+  }
+
+  if ("description" in values) {
+    metadata.excerpt = values["description"];
+  } else if ("og:description" in values) {
+    // Use facebook open graph description.
+    metadata.excerpt = values["og:description"];
+  } else if ("twitter:description" in values) {
+    // Use twitter cards description.
+    metadata.excerpt = values["twitter:description"];
+  }
+
+  if ("og:title" in values) {
+    // Use facebook open graph title.
+    metadata.title = values["og:title"];
+  } else if ("twitter:title" in values) {
+    // Use twitter cards title.
+    metadata.title = values["twitter:title"];
+  }
+
+  if ("og:image" in values) {
+    // Use facebook open graph image.
+    metadata.image = values["og:image"];
+  } else if ("twitter:image:src" in values) {
+    // Use twitter cards image.
+    metadata.title = values["twitter:image:src"];
+  }
+
+  return metadata;
+};
+
+var grabByline = module.exports.grabByline = function(document) {
+  var checkByline = function(node, matchString) {
+    var isValidByline = function(byline) {
+      if (typeof byline == 'string' || byline instanceof String) {
+        byline = byline.trim();
+        return (byline.length > 0) && (byline.length < 100);
+      }
+      return false;
+    };
+
+    if (node.getAttribute !== undefined) {
+      var rel = node.getAttribute("rel");
+    }
+    if ((rel === "author" || matchString.search(regexps.bylineRe) !== -1) &&
+        isValidByline(node.textContent)) {
+      return true;
+    }
+    return false;
+  };
+
+  var nodes = document.getElementsByTagName('*');
+  for (var i = 0; i < nodes.length; ++i) {
+    var node = nodes[i];
+    // Check to see if this node is a byline, and remove it if it is.
+    if (checkByline(node, node.className + ' ' + node.id)) {
+      return node.textContent.trim();
+    }
+  }
+  return undefined;
+}
+
+var grabExcerpt = module.exports.grabExcerpt = function(content) {
+  // If we haven't found an excerpt in the article's metadata, use the article's
+  // first paragraph as the excerpt. This is used for displaying a preview of
+  // the article's content.
+  var paragraphs = content.getElementsByTagName("p");
+  if (paragraphs.length > 0) {
+    return paragraphs[0].textContent.trim();
+  }
+  return undefined;
+}
 
 /**
  * Remove the style attribute on every e and under.

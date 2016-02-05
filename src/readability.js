@@ -38,6 +38,15 @@ function Readability(window, options) {
   this.__defineGetter__('document', function() {
     return this.getDocument(true);
   });
+  this.__defineGetter__('byline', function() {
+    return this.getByline(true)
+  });
+  this.__defineGetter__('excerpt', function() {
+    return this.getExcerpt(true)
+  });
+  this.__defineGetter__('metadata', function() {
+    return this.getMetadata(true)
+  });
 }
 
 Readability.prototype.close = function() {
@@ -65,6 +74,7 @@ Readability.prototype.getContent = function(notDeprecated) {
     }
   }
 
+  this.cache['article-content-dom'] = articleContent;
   return this.cache['article-content'] = articleContent.innerHTML;
 };
 
@@ -108,6 +118,51 @@ Readability.prototype.getHTML = function(notDeprecated) {
     console.warn('The method `getHTML()` is deprecated, using `html` property instead.');
   }
   return this._document.getElementsByTagName('html')[0].innerHTML;
+};
+
+Readability.prototype.getByline = function(notDeprecated) {
+  if (!notDeprecated) {
+    console.warn('The method `getByline()` is deprecated, using `byline` property instead.');
+  }
+  var ab = 'article-byline';
+  var am = 'article-metadata';
+  if (typeof this.cache[ab] === 'undefined') {
+    if (typeof this.cache[am] === 'undefined') {
+      this.getMetadata(true);
+    }
+    if (this.cache[am].byline) {
+      this.cache[ab] = this.cache[am].byline;
+    } else {
+      this.cache[ab] = helpers.grabByline(this._document);
+    }
+  }
+  return this.cache[ab];
+};
+
+Readability.prototype.getExcerpt = function(notDeprecated) {
+  if (!notDeprecated) {
+    console.warn('The method `getExcerpt()` is deprecated, using `excerpt` property instead.');
+  }
+  var ae = 'article-excerpt';
+  var acd = 'article-content-dom';
+  if (typeof this.cache[ae] === 'undefined') {
+    if (typeof this.cache[acd] === 'undefined') {
+      this.getContent(true);
+    }
+    this.cache[ae] = this.cache[acd] ? helpers.grabExcerpt(this.cache[acd]) : false;
+  }
+  return this.cache[ae];
+};
+
+Readability.prototype.getMetadata = function(notDeprecated) {
+  if (!notDeprecated) {
+    console.warn('The method `getMetadata()` is deprecated, using `metadata` property instead.');
+  }
+  var am = 'article-metadata';
+  if (typeof this.cache[am] === 'undefined') {
+    this.cache[am] = helpers.grabMetadata(this._document);
+  }
+  return this.cache[am];
 };
 
 function _findHTMLCharset(htmlbuffer) {
