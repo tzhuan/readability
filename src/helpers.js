@@ -262,10 +262,10 @@ var grabMetadata = module.exports.grabMetadata = function(document) {
 
   // Match "description", or Twitter's "twitter:description" (Cards)
   // in name attribute.
-  var namePattern = /^\s*((twitter)\s*:\s*)?(description|title|image:src)\s*$/gi;
+  var namePattern = /^\s*((twitter)\s*:\s*)?(description|title|image:src)\s*$/i;
 
   // Match Facebook's Open Graph title & description properties.
-  var propertyPattern = /^\s*og\s*:\s*(description|title|image)\s*$/gi;
+  var propertyPattern = /^\s*og\s*:\s*(description|title|image)\s*$/i;
 
   // Find description tags.
   for (var i = 0; i < metaElements.length; ++i) {
